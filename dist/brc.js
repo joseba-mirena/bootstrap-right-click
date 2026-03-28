@@ -1,0 +1,472 @@
+/* =========================================
+ * BRC JS - A lightweight, accessible right-click menu 
+ *          that syncs with Bootstrap navbar
+ *
+ * @package    BRC JS
+ * @version    v1.0.0
+ * @copyright  2026 JosebaMirena.com
+ * @license    MIT
+ *             https://www.josebamirena.com/media/assets/brc/1.0.0/LICENSE
+ * @author     florin
+ * 
+ * DOCUMENTATION:
+ * https://www.josebamirena.com/media/assets/brc/1.0.0/README
+ */
+const BootstrapRightClickNav = (function() {
+    'use strict';
+
+    let _config = {
+        enabled: true,
+        injectCSS: true,
+        injectHTML: true,
+        minWidth: '200px',
+        zIndex: 10000,
+        menuId: 'bootstrap-rightclick-nav',
+        excludeElements: ['input', 'textarea', '[contenteditable="true"]'],
+        debug: false,
+        navSelector: '.navbar-nav',
+        borderColor: 'var(--color-tertiary, var(--bs-primary))',
+        activeColor: 'var(--color-primary, var(--bs-primary))'
+    };
+
+    let _menu = null;
+    let _styleElement = null;
+    let _isVisible = false;
+    let _isTouchDevice = false;
+    let _positionTimeout = null;
+    let _isRTL = false;
+
+    function _log(message) {
+        if (_config.debug) console.log(`[BootstrapRightClickNav] ${message}`);
+    }
+
+    function _injectCSS() {
+        if (document.getElementById(`${_config.menuId}-styles`)) return;
+
+        const css = `
+            #${_config.menuId} {
+                position: fixed;
+                z-index: ${_config.zIndex};
+                background: var(--bs-body-bg, #ffffff);
+                outline: none !important;
+                border: 1px solid ${_config.borderColor} !important;
+                border-radius: var(--border-lg, var(--bs-border-radius-lg, 0.5rem));
+                box-shadow: var(--bs-box-shadow-lg, 0 1rem 3rem rgba(0,0,0,0.175));
+                min-width: ${_config.minWidth};
+                width: fit-content;
+                max-width: calc(100vw - 40px);
+                overflow-y: auto;
+                display: none;
+                backdrop-filter: blur(10px);
+                scrollbar-width: none;
+                -ms-overflow-style: none;
+                font-family: inherit;
+            }
+
+            /* Hide scrollbar but keep functionality */
+            #${_config.menuId}::-webkit-scrollbar {
+                display: none;
+            }
+
+            .rc-nav-item {
+                padding: 0.5rem 1rem;
+                cursor: pointer;
+                transition: all 0.15s ease;
+                color: var(--bs-body-color);
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                white-space: nowrap;
+                border-left: 3px solid transparent;
+                font-family: inherit;
+                font-size: 0.95rem;
+                line-height: 1.5;
+                user-select: none;
+            }
+
+            .rc-nav-item:hover {
+                background: rgba(var(--bs-primary-rgb), 0.1);
+                border-left-color: ${_config.borderColor};
+            }
+
+            /* Active state */
+            .rc-nav-item.active,
+            .rc-nav-item.child.active,
+            .rc-nav-item.active:hover,
+            .rc-nav-item.child.active:hover {
+                background: ${_config.activeColor} !important;
+                color: #ffffff !important;
+                border-left-color: ${_config.activeColor} !important;
+                border-right-color: ${_config.activeColor} !important;
+            }
+
+            /* RTL support */
+            html[dir="rtl"] .rc-nav-item {
+                border-left: none;
+                border-right: 3px solid transparent;
+            }
+
+            html[dir="rtl"] .rc-nav-item:hover {
+                border-right-color: ${_config.borderColor};
+                border-left-color: transparent;
+            }
+
+            html[dir="rtl"] .rc-nav-item.active,
+            html[dir="rtl"] .rc-nav-item.child.active,
+            html[dir="rtl"] .rc-nav-item.active:hover,
+            html[dir="rtl"] .rc-nav-item.child.active:hover {
+                border-right-color: ${_config.activeColor} !important;
+                border-left-color: transparent !important;
+            }
+
+            /* Subcategories */
+            .rc-nav-item.child {
+                padding: 0.4rem 2.2rem 0.4rem 2rem;
+                font-size: 0.9rem;
+            }
+
+            html[dir="rtl"] .rc-nav-item.child {
+                padding: 0.4rem 2rem 0.4rem 2.2rem;
+            }
+
+            .rc-nav-divider {
+                height: 1px;
+                background: var(--bs-border-color);
+                margin: 0.5rem 0;
+            }
+
+            @keyframes rcNavFadeIn {
+                from { opacity: 0; transform: scale(0.95); }
+                to { opacity: 1; transform: scale(1); }
+            }
+
+            .rc-nav-show {
+                animation: rcNavFadeIn 0.1s ease-out;
+            }
+
+            /* Touch device optimization */
+            @media (hover: none) and (pointer: coarse) {
+                .rc-nav-item {
+                    padding: 0.75rem 1rem;
+                    font-size: 1rem;
+                }
+                
+                .rc-nav-item.child {
+                    padding: 0.65rem 2rem 0.65rem 2rem;
+                }
+            }
+        `;
+
+        _styleElement = document.createElement('style');
+        _styleElement.id = `${_config.menuId}-styles`;
+        _styleElement.textContent = css;
+        document.head.appendChild(_styleElement);
+    }
+
+    function _injectHTML() {
+        if (document.getElementById(_config.menuId)) return;
+
+        const menuHTML = `<div id="${_config.menuId}" role="menu" aria-label="Navigation menu" style="display: none;"></div>`;
+        document.body.insertAdjacentHTML('beforeend', menuHTML);
+        _menu = document.getElementById(_config.menuId);
+    }
+
+    function _buildMenu() {
+        const nav = document.querySelector(_config.navSelector);
+        if (!nav) {
+            _log('Navigation not found', 'warn');
+            return;
+        }
+
+        let html = '';
+        const currentPath = window.location.pathname;
+
+        nav.querySelectorAll(':scope > li').forEach((item, index) => {
+            const link = item.querySelector(':scope > a');
+            if (!link) return;
+
+            const hasDropdown = item.classList.contains('dropdown');
+            const href = link.getAttribute('href') || '#';
+            
+            // Check if this category is active
+            let isActive = link.classList.contains('active') || 
+                          item.classList.contains('active') ||
+                          currentPath === href;
+            
+            // Main category - just the text, no icons
+            html += `<div class="rc-nav-item ${isActive ? 'active' : ''}" data-href="${href}" role="menuitem">
+                <span>${link.textContent.trim()}</span>
+            </div>`;
+
+            // Children
+            if (hasDropdown) {
+                item.querySelectorAll('.dropdown-menu .dropdown-item').forEach(child => {
+                    const childLink = child.querySelector('a') || child;
+                    const childHref = childLink.getAttribute('href') || '#';
+                    
+                    const childActive = child.classList.contains('active') || 
+                                       childLink.classList.contains('active') || 
+                                       currentPath === childHref;
+
+                    // Child - just indentation
+                    html += `<div class="rc-nav-item child ${childActive ? 'active' : ''}" data-href="${childHref}" role="menuitem">
+                        <span>${childLink.textContent.trim()}</span>
+                    </div>`;
+                });
+            }
+
+            if (index < nav.children.length - 1) {
+                html += '<div class="rc-nav-divider" role="separator"></div>';
+            }
+        });
+
+        _menu.innerHTML = html;
+
+        _menu.querySelectorAll('.rc-nav-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const href = item.dataset.href;
+                if (href && href !== '#') {
+                    window.location.href = href;
+                } else if (href === '#') {
+                    // Scroll to top
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+                _hide();
+            });
+        });
+    }
+
+    function _positionMenu(x, y) {
+        if (_positionTimeout) clearTimeout(_positionTimeout);
+        
+        _positionTimeout = setTimeout(() => {
+            const windowWidth = window.innerWidth;
+            const windowHeight = window.innerHeight;
+            const menuWidth = _menu.offsetWidth;
+            const menuHeight = _menu.offsetHeight;
+
+            const spaceRight = windowWidth - x;
+            const spaceLeft = x;
+            const spaceBottom = windowHeight - y;
+            const spaceTop = y;
+
+            let left, top;
+
+            // RTL detection
+            _isRTL = document.dir === 'rtl' || document.documentElement.dir === 'rtl';
+
+            // Horizontal positioning with RTL support
+            if (_isRTL) {
+                // RTL logic - flip horizontal
+                if (spaceLeft >= menuWidth + 10 || spaceLeft >= spaceRight) {
+                    left = Math.max(x - menuWidth - 10, 10);
+                } else {
+                    left = Math.min(x + 10, windowWidth - menuWidth - 10);
+                }
+            } else {
+                // LTR logic (your original)
+                if (spaceRight >= menuWidth + 10 || spaceRight >= spaceLeft) {
+                    left = Math.min(x + 10, windowWidth - menuWidth - 10);
+                } else {
+                    left = Math.max(x - menuWidth - 10, 10);
+                }
+            }
+
+            // Vertical positioning (same for both)
+            if (spaceBottom >= menuHeight + 10) {
+                top = Math.min(y + 10, windowHeight - menuHeight - 10);
+            } else if (spaceTop >= menuHeight + 10) {
+                top = Math.max(y - menuHeight - 10, 10);
+            } else {
+                top = 10;
+            }
+
+            // Final bounds checking
+            left = Math.max(5, Math.min(left, windowWidth - menuWidth - 5));
+            top = Math.max(5, Math.min(top, windowHeight - menuHeight - 5));
+
+            _menu.style.left = left + 'px';
+            _menu.style.top = top + 'px';
+            _menu.style.maxHeight = (windowHeight - 40) + 'px';
+        }, 10);
+    }
+
+    function _show(e) {
+        if (!_config.enabled) return;
+        
+        // Don't show on touch devices (use long-press instead)
+        if (_isTouchDevice) {
+            _log('Touch device detected - right-click menu disabled');
+            return;
+        }
+        
+        e.preventDefault();
+        e.stopPropagation();
+
+        _buildMenu();
+        
+        // Show menu to get accurate measurements
+        _menu.style.display = 'block';
+        
+        // Use setTimeout to ensure DOM is updated
+        setTimeout(() => {
+            _positionMenu(e.clientX, e.clientY);
+            _menu.classList.add('rc-nav-show');
+            
+            // Announce for screen readers
+            _menu.setAttribute('aria-hidden', 'false');
+        }, 0);
+        
+        _isVisible = true;
+        _menu.focus();
+    }
+
+    function _hide() {
+        _menu.style.display = 'none';
+        _menu.classList.remove('rc-nav-show');
+        _menu.setAttribute('aria-hidden', 'true');
+        _isVisible = false;
+    }
+
+    function _handleClickOutside(e) {
+        if (_isVisible && !_menu.contains(e.target)) _hide();
+    }
+
+    function _handleKeyDown(e) {
+        if (e.key === 'Escape' && _isVisible) _hide();
+        
+        // Arrow key navigation within menu
+        if (_isVisible && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+            e.preventDefault();
+            const items = Array.from(_menu.querySelectorAll('.rc-nav-item'));
+            const currentIndex = items.indexOf(document.activeElement);
+            
+            if (e.key === 'ArrowDown') {
+                const nextIndex = (currentIndex + 1) % items.length;
+                items[nextIndex].focus();
+            } else if (e.key === 'ArrowUp') {
+                const prevIndex = (currentIndex - 1 + items.length) % items.length;
+                items[prevIndex].focus();
+            }
+        }
+    }
+
+    function _handleResize() {
+        if (_isVisible) _hide();
+    }
+
+    function _handleWheel(e) {
+        if (_isVisible && _menu.contains(e.target)) {
+            const menu = _menu;
+            const scrollTop = menu.scrollTop;
+            const scrollHeight = menu.scrollHeight;
+            const clientHeight = menu.clientHeight;
+            
+            if (scrollHeight <= clientHeight) {
+                e.preventDefault();
+                return;
+            }
+            
+            const isAtTop = scrollTop === 0;
+            const isAtBottom = Math.abs(scrollTop + clientHeight - scrollHeight) < 1;
+            
+            if ((e.deltaY < 0 && isAtTop) || (e.deltaY > 0 && isAtBottom)) {
+                e.preventDefault();
+            }
+        }
+    }
+
+    function _cleanup() {
+        if (_menu) {
+            _menu.remove();
+            _menu = null;
+        }
+        if (_styleElement) {
+            _styleElement.remove();
+            _styleElement = null;
+        }
+        _isVisible = false;
+        _log('Cleanup completed');
+    }
+
+    return {
+        init: function(options = {}) {
+            _config = { ..._config, ...options };
+            
+            // Detect touch device
+            _isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            
+            _log(`Initializing... (Touch device: ${_isTouchDevice})`);
+            
+            _injectCSS();
+            _injectHTML();
+            
+            _menu = document.getElementById(_config.menuId);
+            
+            if (_menu) {
+                _menu.setAttribute('tabindex', '-1');
+                _menu.setAttribute('aria-hidden', 'true');
+                
+                document.addEventListener('contextmenu', (e) => _show(e));
+                document.addEventListener('click', _handleClickOutside);
+                document.addEventListener('keydown', _handleKeyDown);
+                window.addEventListener('resize', _handleResize);
+                window.addEventListener('beforeunload', _cleanup);
+                
+                _menu.addEventListener('wheel', _handleWheel, { passive: false });
+                
+                _log('Initialized successfully');
+            } else {
+                _log('Failed to initialize', 'error');
+            }
+            
+            return this;
+        },
+
+        enable: function() { 
+            _config.enabled = true; 
+            _log('Enabled');
+        },
+        
+        disable: function() { 
+            _config.enabled = false; 
+            _hide(); 
+            _log('Disabled');
+        },
+        
+        hide: function() { 
+            _hide(); 
+        },
+        
+        update: function() { 
+            if (_isVisible) _buildMenu(); 
+            _log('Menu updated');
+        },
+        
+        destroy: function() {
+            document.removeEventListener('contextmenu', _show);
+            document.removeEventListener('click', _handleClickOutside);
+            document.removeEventListener('keydown', _handleKeyDown);
+            window.removeEventListener('resize', _handleResize);
+            window.removeEventListener('beforeunload', _cleanup);
+            
+            if (_menu) {
+                _menu.removeEventListener('wheel', _handleWheel);
+            }
+            
+            _cleanup();
+            _log('Destroyed');
+        },
+        
+        isVisible: function() {
+            return _isVisible;
+        },
+        
+        setConfig: function(options) {
+            _config = { ..._config, ...options };
+            _log('Configuration updated');
+        }
+    };
+})();
