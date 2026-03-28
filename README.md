@@ -13,6 +13,7 @@
 ![Version](https://img.shields.io/badge/version-1.0.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Size](https://img.shields.io/badge/size-9.6%20kB-lightgrey)
+[![Live Demo](https://img.shields.io/badge/Live_Demo-View-ff2c6e)](https://www.josebamirena.com/freebies-tools-resources/bootstrap-right-click-menu-javascript)
 
 A lightweight, zero-dependency JavaScript module that adds a customizable right-click navigation menu to your Bootstrap website. The menu automatically syncs with your existing navbar structure, supports RTL languages, and respects your theme's CSS variables.
 
@@ -34,7 +35,7 @@ A lightweight, zero-dependency JavaScript module that adds a customizable right-
 ### 1. Include the Script
 
 ```html
-    <script src="path/to/brc.js" integrity="sha384-RDO0QvX/of2ScsQlFBKyx/cD77i8V5v2qPLLW9mm/HC2DBsP9WUmodRvI/d3qED9" crossorigin="anonymous"></script>
+    <script src="https://opensource.josebamirena.com/brc/1.0.0/dist/brc.js" integrity="sha384-RDO0QvX/of2ScsQlFBKyx/cD77i8V5v2qPLLW9mm/HC2DBsP9WUmodRvI/d3qED9" crossorigin="anonymous"></script>
 ```
 
 
@@ -145,3 +146,10 @@ A lightweight, zero-dependency JavaScript module that adds a customizable right-
     });
 ```
 
+
+## 🎯 Live Demo
+
+Try Bootstrap Right Click Menu live on my website:  
+👉 [BRC JS Demo](https://www.josebamirena.com/freebies-tools-resources/bootstrap-right-click-menu-javascript)
+
+See how it auto-generates from your navbar, handles RTL, and adapts to touch device
