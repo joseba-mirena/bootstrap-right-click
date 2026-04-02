@@ -3,56 +3,69 @@
  *          that syncs with Bootstrap navbar
  *
  * @package    BRC JS
- * @version    v1.0.0
+ * @version    v1.2.0
  * @copyright  2026 JosebaMirena.com
  * @license    MIT
- *             https://www.josebamirena.com/media/assets/brc/1.0.0/LICENSE
- * @author     florin
+ *             https://www.josebamirena.com/media/assets/brc/1.2.0/LICENSE
+ * @author     Joseba Mirena
  * 
  * DOCUMENTATION:
- * https://www.josebamirena.com/media/assets/brc/1.0.0/README
+ * https://www.josebamirena.com/media/assets/brc/1.2.0/README
  */
 const BootstrapRightClickNav = (function() {
     'use strict';
 
-    let _config = {
+    let _cfg = {
         enabled: true,
+        debug: false,
         injectCSS: true,
         injectHTML: true,
         minWidth: '200px',
         zIndex: 10000,
         menuId: 'bootstrap-rightclick-nav',
         excludeElements: ['input', 'textarea', '[contenteditable="true"]'],
-        debug: false,
         navSelector: '.navbar-nav',
         borderColor: 'var(--color-tertiary, var(--bs-primary))',
         activeColor: 'var(--color-primary, var(--bs-primary))'
     };
 
-    let _menu = null;
-    let _styleElement = null;
+    let _m = null;
+    let _styleEl = null;
     let _isVisible = false;
-    let _isTouchDevice = false;
-    let _positionTimeout = null;
+    let _posTo = null;
     let _isRTL = false;
 
-    function _log(message) {
-        if (_config.debug) console.log(`[BootstrapRightClickNav] ${message}`);
+    function _log(msg, t = 'info') {
+        if (!_cfg.debug) return;
+
+        const i = `[BRC] ${msg}`;
+
+        if (t === 'warn') {
+            console.warn(i);
+        } else if (t === 'error') {
+            console.error(i);
+        } else {
+            console.log(i);
+        }
     }
 
-    function _injectCSS() {
-        if (document.getElementById(`${_config.menuId}-styles`)) return;
+    function _gID(id) {
+        return document.getElementById(id);
+    }
+
+    function _injCSS() {
+        if (_gID(`${_cfg.menuId}-styles`)) return;
 
         const css = `
-            #${_config.menuId} {
+            #${_cfg.menuId} {
                 position: fixed;
-                z-index: ${_config.zIndex};
+                z-index: ${_cfg.zIndex};
                 background: var(--bs-body-bg, #ffffff);
                 outline: none !important;
-                border: 1px solid ${_config.borderColor} !important;
+                border: 1px solid ${_cfg.borderColor} !important;
                 border-radius: var(--border-lg, var(--bs-border-radius-lg, 0.5rem));
                 box-shadow: var(--bs-box-shadow-lg, 0 1rem 3rem rgba(0,0,0,0.175));
-                min-width: ${_config.minWidth};
+                min-width: ${_cfg.minWidth};
                 width: fit-content;
                 max-width: calc(100vw - 40px);
                 overflow-y: auto;
@@ -64,7 +77,7 @@ const BootstrapRightClickNav = (function() {
             }
 
             /* Hide scrollbar but keep functionality */
-            #${_config.menuId}::-webkit-scrollbar {
+            #${_cfg.menuId}::-webkit-scrollbar {
                 display: none;
             }
 
@@ -86,7 +99,7 @@ const BootstrapRightClickNav = (function() {
 
             .rc-nav-item:hover {
                 background: rgba(var(--bs-primary-rgb), 0.1);
-                border-left-color: ${_config.borderColor};
+                border-left-color: ${_cfg.borderColor};
             }
 
             /* Active state */
@@ -94,10 +107,10 @@ const BootstrapRightClickNav = (function() {
             .rc-nav-item.child.active,
             .rc-nav-item.active:hover,
             .rc-nav-item.child.active:hover {
-                background: ${_config.activeColor} !important;
+                background: ${_cfg.activeColor} !important;
                 color: #ffffff !important;
-                border-left-color: ${_config.activeColor} !important;
-                border-right-color: ${_config.activeColor} !important;
+                border-left-color: ${_cfg.activeColor} !important;
+                border-right-color: ${_cfg.activeColor} !important;
             }
 
             /* RTL support */
@@ -107,7 +120,7 @@ const BootstrapRightClickNav = (function() {
             }
 
             html[dir="rtl"] .rc-nav-item:hover {
-                border-right-color: ${_config.borderColor};
+                border-right-color: ${_cfg.borderColor};
                 border-left-color: transparent;
             }
 
@@ -115,7 +128,7 @@ const BootstrapRightClickNav = (function() {
             html[dir="rtl"] .rc-nav-item.child.active,
             html[dir="rtl"] .rc-nav-item.active:hover,
             html[dir="rtl"] .rc-nav-item.child.active:hover {
-                border-right-color: ${_config.activeColor} !important;
+                border-right-color: ${_cfg.activeColor} !important;
                 border-left-color: transparent !important;
             }
 
@@ -143,36 +156,24 @@ const BootstrapRightClickNav = (function() {
             .rc-nav-show {
                 animation: rcNavFadeIn 0.1s ease-out;
             }
-
-            /* Touch device optimization */
-            @media (hover: none) and (pointer: coarse) {
-                .rc-nav-item {
-                    padding: 0.75rem 1rem;
-                    font-size: 1rem;
-                }
-                
-                .rc-nav-item.child {
-                    padding: 0.65rem 2rem 0.65rem 2rem;
-                }
-            }
         `;
 
-        _styleElement = document.createElement('style');
-        _styleElement.id = `${_config.menuId}-styles`;
-        _styleElement.textContent = css;
-        document.head.appendChild(_styleElement);
+        _styleEl = document.createElement('style');
+        _styleEl.id = `${_cfg.menuId}-styles`;
+        _styleEl.textContent = css;
+        document.head.appendChild(_styleEl);
     }
 
-    function _injectHTML() {
-        if (document.getElementById(_config.menuId)) return;
+    function _injHTML() {
+        if (_gID(_cfg.menuId)) return;
 
-        const menuHTML = `<div id="${_config.menuId}" role="menu" aria-label="Navigation menu" style="display: none;"></div>`;
+        const menuHTML = `<div id="${_cfg.menuId}" role="menu" aria-label="Navigation menu" style="display: none;"></div>`;
         document.body.insertAdjacentHTML('beforeend', menuHTML);
-        _menu = document.getElementById(_config.menuId);
+        _m = _gID(_cfg.menuId);
     }
 
-    function _buildMenu() {
-        const nav = document.querySelector(_config.navSelector);
+    function _buildM() {
+        const nav = document.querySelector(_cfg.navSelector);
         if (!nav) {
             _log('Navigation not found', 'warn');
             return;
@@ -193,7 +194,7 @@ const BootstrapRightClickNav = (function() {
                           item.classList.contains('active') ||
                           currentPath === href;
             
-            // Main category - just the text, no icons
+            // Main category
             html += `<div class="rc-nav-item ${isActive ? 'active' : ''}" data-href="${href}" role="menuitem">
                 <span>${link.textContent.trim()}</span>
             </div>`;
@@ -208,7 +209,7 @@ const BootstrapRightClickNav = (function() {
                                        childLink.classList.contains('active') || 
                                        currentPath === childHref;
 
-                    // Child - just indentation
+                    // Child
                     html += `<div class="rc-nav-item child ${childActive ? 'active' : ''}" data-href="${childHref}" role="menuitem">
                         <span>${childLink.textContent.trim()}</span>
                     </div>`;
@@ -220,37 +221,42 @@ const BootstrapRightClickNav = (function() {
             }
         });
 
-        _menu.innerHTML = html;
+        _m.innerHTML = html;
 
-        _menu.querySelectorAll('.rc-nav-item').forEach(item => {
+        _m.querySelectorAll('.rc-nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
                 const href = item.dataset.href;
-                if (href && href !== '#') {
+                
+                if (href && href.startsWith('#') && href !== '#') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    const target = document.querySelector(href);
+                    if (target) {
+                        _hide();
+                        const y = target.getBoundingClientRect().top + window.scrollY;
+                        window.scrollTo({ top: y, behavior: 'smooth' });
+                    }
+                } else {
                     window.location.href = href;
-                } else if (href === '#') {
-                    // Scroll to top
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
                 }
-                _hide();
             });
         });
     }
 
-    function _positionMenu(x, y) {
-        if (_positionTimeout) clearTimeout(_positionTimeout);
+    function _posM(x, y) {
+        if (_posTo) clearTimeout(_posTo);
         
-        _positionTimeout = setTimeout(() => {
-            const windowWidth = window.innerWidth;
-            const windowHeight = window.innerHeight;
-            const menuWidth = _menu.offsetWidth;
-            const menuHeight = _menu.offsetHeight;
+        _posTo = setTimeout(() => {
+            const windowW = window.innerWidth;
+            const windowH = window.innerHeight;
+            const menuW = _m.offsetWidth;
+            const menuH = _m.offsetHeight;
 
-            const spaceRight = windowWidth - x;
-            const spaceLeft = x;
-            const spaceBottom = windowHeight - y;
-            const spaceTop = y;
+            const spcR = windowW - x;
+            const spcL = x;
+            const spcB = windowH - y;
+            const spcT = y;
 
             let left, top;
 
@@ -260,87 +266,81 @@ const BootstrapRightClickNav = (function() {
             // Horizontal positioning with RTL support
             if (_isRTL) {
                 // RTL logic - flip horizontal
-                if (spaceLeft >= menuWidth + 10 || spaceLeft >= spaceRight) {
-                    left = Math.max(x - menuWidth - 10, 10);
+                if (spcL >= menuW + 10 || spcL >= spcR) {
+                    left = Math.max(x - menuW - 10, 10);
                 } else {
-                    left = Math.min(x + 10, windowWidth - menuWidth - 10);
+                    left = Math.min(x + 10, windowW - menuW - 10);
                 }
             } else {
-                // LTR logic (your original)
-                if (spaceRight >= menuWidth + 10 || spaceRight >= spaceLeft) {
-                    left = Math.min(x + 10, windowWidth - menuWidth - 10);
+                // LTR logic
+                if (spcR >= menuW + 10 || spcR >= spcL) {
+                    left = Math.min(x + 10, windowW - menuW - 10);
                 } else {
-                    left = Math.max(x - menuWidth - 10, 10);
+                    left = Math.max(x - menuW - 10, 10);
                 }
             }
 
             // Vertical positioning (same for both)
-            if (spaceBottom >= menuHeight + 10) {
-                top = Math.min(y + 10, windowHeight - menuHeight - 10);
-            } else if (spaceTop >= menuHeight + 10) {
-                top = Math.max(y - menuHeight - 10, 10);
+            if (spcB >= menuH + 10) {
+                top = Math.min(y + 10, windowH - menuH - 10);
+            } else if (spcT >= menuH + 10) {
+                top = Math.max(y - menuH - 10, 10);
             } else {
                 top = 10;
             }
 
             // Final bounds checking
-            left = Math.max(5, Math.min(left, windowWidth - menuWidth - 5));
-            top = Math.max(5, Math.min(top, windowHeight - menuHeight - 5));
+            left = Math.max(5, Math.min(left, windowW - menuW - 5));
+            top = Math.max(5, Math.min(top, windowH - menuH - 5));
 
-            _menu.style.left = left + 'px';
-            _menu.style.top = top + 'px';
-            _menu.style.maxHeight = (windowHeight - 40) + 'px';
+            _m.style.left = left + 'px';
+            _m.style.top = top + 'px';
+            _m.style.maxHeight = (windowH - 40) + 'px';
         }, 10);
     }
 
     function _show(e) {
-        if (!_config.enabled) return;
-        
-        // Don't show on touch devices (use long-press instead)
-        if (_isTouchDevice) {
-            _log('Touch device detected - right-click menu disabled');
-            return;
-        }
+        if (!_cfg.enabled) return;
         
         e.preventDefault();
         e.stopPropagation();
 
-        _buildMenu();
+        _buildM();
         
         // Show menu to get accurate measurements
-        _menu.style.display = 'block';
+        _m.style.display = 'block';
         
         // Use setTimeout to ensure DOM is updated
         setTimeout(() => {
-            _positionMenu(e.clientX, e.clientY);
-            _menu.classList.add('rc-nav-show');
+            _posM(e.clientX, e.clientY);
+            _m.classList.add('rc-nav-show');
             
             // Announce for screen readers
-            _menu.setAttribute('aria-hidden', 'false');
+            _m.setAttribute('aria-hidden', 'false');
         }, 0);
         
         _isVisible = true;
-        _menu.focus();
+        _m.focus();
     }
 
     function _hide() {
-        _menu.style.display = 'none';
-        _menu.classList.remove('rc-nav-show');
-        _menu.setAttribute('aria-hidden', 'true');
+        _m.style.display = 'none';
+        _m.classList.remove('rc-nav-show');
+        _m.setAttribute('aria-hidden', 'true');
         _isVisible = false;
     }
 
-    function _handleClickOutside(e) {
-        if (_isVisible && !_menu.contains(e.target)) _hide();
+    function _hdlCO(e) {
+        if (_isVisible && !_m.contains(e.target)) _hide();
     }
 
-    function _handleKeyDown(e) {
+    function _hdlK(e) {
         if (e.key === 'Escape' && _isVisible) _hide();
         
         // Arrow key navigation within menu
         if (_isVisible && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
             e.preventDefault();
-            const items = Array.from(_menu.querySelectorAll('.rc-nav-item'));
+            const items = Array.from(_m.querySelectorAll('.rc-nav-item'));
             const currentIndex = items.indexOf(document.activeElement);
             
             if (e.key === 'ArrowDown') {
@@ -353,13 +353,13 @@ const BootstrapRightClickNav = (function() {
         }
     }
 
-    function _handleResize() {
+    function _hdlRes() {
         if (_isVisible) _hide();
     }
 
-    function _handleWheel(e) {
-        if (_isVisible && _menu.contains(e.target)) {
-            const menu = _menu;
+    function _hdlWheel(e) {
+        if (_isVisible && _m.contains(e.target)) {
+            const menu = _m;
             const scrollTop = menu.scrollTop;
             const scrollHeight = menu.scrollHeight;
             const clientHeight = menu.clientHeight;
@@ -378,14 +378,14 @@ const BootstrapRightClickNav = (function() {
         }
     }
 
-    function _cleanup() {
-        if (_menu) {
-            _menu.remove();
-            _menu = null;
+    function _clean() {
+        if (_m) {
+            _m.remove();
+            _m = null;
         }
-        if (_styleElement) {
-            _styleElement.remove();
-            _styleElement = null;
+        if (_styleEl) {
+            _styleEl.remove();
+            _styleEl = null;
         }
         _isVisible = false;
         _log('Cleanup completed');
@@ -393,29 +393,22 @@ const BootstrapRightClickNav = (function() {
 
     return {
         init: function(options = {}) {
-            _config = { ..._config, ...options };
-            
-            // Detect touch device
-            _isTouchDevice = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
-            
-            _log(`Initializing... (Touch device: ${_isTouchDevice})`);
-            
-            _injectCSS();
-            _injectHTML();
-            
-            _menu = document.getElementById(_config.menuId);
-            
-            if (_menu) {
-                _menu.setAttribute('tabindex', '-1');
-                _menu.setAttribute('aria-hidden', 'true');
+            _cfg = { ..._cfg, ...options };
+
+            _injCSS();
+            _injHTML();
+
+            if (_m) {
+                _m.setAttribute('tabindex', '-1');
+                _m.setAttribute('aria-hidden', 'true');
                 
                 document.addEventListener('contextmenu', (e) => _show(e));
-                document.addEventListener('click', _handleClickOutside);
-                document.addEventListener('keydown', _handleKeyDown);
-                window.addEventListener('resize', _handleResize);
-                window.addEventListener('beforeunload', _cleanup);
+                document.addEventListener('click', _hdlCO);
+                document.addEventListener('keydown', _hdlK);
+                window.addEventListener('resize', _hdlRes);
+                window.addEventListener('beforeunload', _clean);
                 
-                _menu.addEventListener('wheel', _handleWheel, { passive: false });
+                _m.addEventListener('wheel', _hdlWheel, { passive: false });
                 
                 _log('Initialized successfully');
             } else {
@@ -426,12 +419,12 @@ const BootstrapRightClickNav = (function() {
         },
 
         enable: function() { 
-            _config.enabled = true; 
+            _cfg.enabled = true; 
             _log('Enabled');
         },
         
         disable: function() { 
-            _config.enabled = false; 
+            _cfg.enabled = false; 
             _hide(); 
             _log('Disabled');
         },
@@ -441,22 +434,22 @@ const BootstrapRightClickNav = (function() {
         },
         
         update: function() { 
-            if (_isVisible) _buildMenu(); 
+            if (_isVisible) _buildM(); 
             _log('Menu updated');
         },
         
         destroy: function() {
             document.removeEventListener('contextmenu', _show);
-            document.removeEventListener('click', _handleClickOutside);
-            document.removeEventListener('keydown', _handleKeyDown);
-            window.removeEventListener('resize', _handleResize);
-            window.removeEventListener('beforeunload', _cleanup);
+            document.removeEventListener('click', _hdlCO);
+            document.removeEventListener('keydown', _hdlK);
+            window.removeEventListener('resize', _hdlRes);
+            window.removeEventListener('beforeunload', _clean);
             
-            if (_menu) {
-                _menu.removeEventListener('wheel', _handleWheel);
+            if (_m) {
+                _m.removeEventListener('wheel', _hdlWheel);
             }
             
-            _cleanup();
+            _clean();
             _log('Destroyed');
         },
         
@@ -465,7 +458,7 @@ const BootstrapRightClickNav = (function() {
         },
         
         setConfig: function(options) {
-            _config = { ..._config, ...options };
+            _cfg = { ..._cfg, ...options };
             _log('Configuration updated');
         }
     };

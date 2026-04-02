@@ -4,16 +4,15 @@
 *Bootstrap Right-Click Navigation Menu*
 
 
-* **Package:** BRC JS\
-* **Version:** v1.0.0\
-* **Copyright:** 2026 [`JosebaMirena.com`](https://www.josebamirena.com)\
+* **Package:** BRC JS
+* **Version:** v1.2.0
+* **Copyright:** 2026 [`JosebaMirena.com`](https://www.josebamirena.com)
 * **License:** [`MIT License`](./LICENSE)
 * **Author:** Joseba Mirena ([@joseba-mirena](https://github.com/joseba-mirena))
 
-![Version](https://img.shields.io/badge/version-1.0.0-blue)
+![Version](https://img.shields.io/badge/version-1.2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Size](https://img.shields.io/badge/size-9.6%20kB-lightgrey)
-[![Live Demo](https://img.shields.io/badge/Live_Demo-View-ff2c6e)](https://www.josebamirena.com/freebies-tools-resources/bootstrap-right-click-menu-javascript)
+![Size](https://img.shields.io/badge/size-8.4%20kB-lightgrey)
 
 A lightweight, zero-dependency JavaScript module that adds a customizable right-click navigation menu to your Bootstrap website. The menu automatically syncs with your existing navbar structure, supports RTL languages, and respects your theme's CSS variables.
 
@@ -23,7 +22,6 @@ A lightweight, zero-dependency JavaScript module that adds a customizable right-
 - 🎯 **No Code Duplication** - Automatically builds menu from your existing Bootstrap navbar
 - 🎨 **Theme Aware** - Uses Bootstrap CSS variables, supports custom color schemes
 - 🌍 **RTL Support** - Full right-to-left language support
-- 📱 **Touch Optimized** - Automatically detects and adapts for touch devices
 - ♿ **Accessible** - ARIA labels, keyboard navigation, screen reader friendly
 - 🎭 **Smart Positioning** - Automatically positions menu where most space is available
 - 🎨 **Customizable** - Easy to style with CSS variables or configuration options
@@ -35,7 +33,10 @@ A lightweight, zero-dependency JavaScript module that adds a customizable right-
 ### 1. Include the Script
 
 ```html
-    <script src="https://opensource.josebamirena.com/brc/1.0.0/dist/brc.js" integrity="sha384-RDO0QvX/of2ScsQlFBKyx/cD77i8V5v2qPLLW9mm/HC2DBsP9WUmodRvI/d3qED9" crossorigin="anonymous"></script>
+    <script src="https://opensource.josebamirena.com/brc/1.0.0/dist/brc.min.js" 
+        integrity="sha384-r4ggKTIXd3DPzFbIYSuzBdCgP7MWtEL0UdsDfoFXh3TKfssRNVxgCpb6F6pxy9yH" 
+        crossorigin="anonymous">
+    </script>
 ```
 
 
@@ -147,9 +148,35 @@ A lightweight, zero-dependency JavaScript module that adds a customizable right-
 ```
 
 
+## 📝 Changelog - BRC JS
+
+### v1.2.0 - Performance & Smooth Scroll Release
+
+#### 🔧 Added
+- Handles any anchor link (`#top`, `#section`, etc.)
+- Color-coded debug console logs (`[BRC] info/warn/error`)
+
+#### 🚀 Improved
+- Optimized variables for better code weight
+- Smooth scroll for any anchor link (`#top`, `#section`)
+- Menu now closes before smooth scroll executes
+- Simplified injection logic
+
+#### 🗑️ Removed
+- Touch device detection (not needed - `contextmenu` doesn't fire on touch)
+
+---
+
+### v1.0.0 - Initial Release
+- Right-click menu syncing with Bootstrap navbar
+- RTL language support
+- ARIA accessibility attributes
+- Public API: `init()`, `enable()`, `disable()`, `hide()`, `update()`, `destroy()`, `isVisible()`, `setConfig()`
+
+
 ## 🎯 Live Demo
 
-Try Bootstrap Right Click Menu live on my website:  
+Try BRC JS live on my website:  
 👉 [BRC JS Demo](https://www.josebamirena.com/freebies-tools-resources/bootstrap-right-click-menu-javascript)
 
-See how it auto-generates from your navbar, handles RTL, and adapts to touch device
+Right-click anywhere on this website (except on the cookie modal) to see the menu in action.
