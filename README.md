@@ -33,7 +33,7 @@ A lightweight, zero-dependency JavaScript module that adds a customizable right-
 ### 1. Include the Script
 
 ```html
-    <script src="https://opensource.josebamirena.com/brc/1.0.0/dist/brc.min.js" 
+    <script src="https://opensource.josebamirena.com/brc/1.2.0/dist/brc.min.js" 
         integrity="sha384-r4ggKTIXd3DPzFbIYSuzBdCgP7MWtEL0UdsDfoFXh3TKfssRNVxgCpb6F6pxy9yH" 
         crossorigin="anonymous">
     </script>
