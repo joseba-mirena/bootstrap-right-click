@@ -3,14 +3,14 @@
  *          that syncs with Bootstrap navbar
  *
  * @package    BRC JS
- * @version    v1.2.0
+ * @version    v1.4.0
  * @copyright  2026 JosebaMirena.com
  * @license    MIT
- *             https://www.josebamirena.com/media/assets/brc/1.2.0/LICENSE
+ *             https://www.josebamirena.com/media/assets/brc/1.4.0/LICENSE
  * @author     Joseba Mirena
  * 
  * DOCUMENTATION:
- * https://www.josebamirena.com/media/assets/brc/1.2.0/README
+ * https://www.josebamirena.com/media/assets/brc/1.4.0/README
  */
 const BootstrapRightClickNav = (function() {
     'use strict';
@@ -301,7 +301,15 @@ const BootstrapRightClickNav = (function() {
 
     function _show(e) {
         if (!_cfg.enabled) return;
-        
+
+        // Excluded Elements
+        const target = e.target;
+        for (const selector of _cfg.excludeElements) {
+            if (target.closest(selector)) {
+                return;
+            }
+        }
+
         e.preventDefault();
         e.stopPropagation();
 
